@@ -10,6 +10,9 @@ pub struct Tape<'input>(Vec<Node<'input>>);
 pub enum Node<'input> {
     /// A string, located inside the input slice
     String(&'input str),
+    #[cfg(feature = "arbitrary-precision")]
+    /// Arbitrary precision number
+    Number(&'input [u8]),
     /// An `Object` with the given `size` starts here.
     /// the following values are keys and values, alternating
     /// however values can be nested and have a length themselves.

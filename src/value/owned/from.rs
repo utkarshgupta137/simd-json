@@ -8,6 +8,8 @@ impl From<crate::BorrowedValue<'_>> for Value {
     fn from(b: BorrowedValue<'_>) -> Self {
         match b {
             BorrowedValue::Static(s) => Self::from(s),
+            #[cfg(feature = "arbitrary-precision")]
+            BorrowedValue::Number(n) => Self::from(n),
             BorrowedValue::String(s) => Self::from(s.to_string()),
             BorrowedValue::Array(a) => a.into_iter().collect(),
             BorrowedValue::Object(m) => m.into_iter().collect(),
@@ -73,6 +75,16 @@ impl From<&String> for Value {
     #[must_use]
     fn from(s: &String) -> Self {
         Self::String(s.clone())
+    }
+}
+
+/********* number **********/
+#[cfg(feature = "arbitrary-precision")]
+impl From<&[u8]> for Value {
+    #[inline]
+    #[must_use]
+    fn from(n: &[u8]) -> Self {
+        Value::Number(n.into())
     }
 }
 

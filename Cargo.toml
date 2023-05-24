@@ -76,6 +76,9 @@ swar-number-parsing = []
 # but does not guarantee round trips for the edges
 approx-number-parsing = []
 
+# Arbitrary precision
+arbitrary-precision = []
+
 # serde compatibility
 serde_impl = ["serde", "serde_json", "halfbrown/serde"]
 

@@ -87,7 +87,14 @@ pub type ObjectHasher = halfbrown::DefaultHashBuilder;
 /// # Errors
 ///
 /// Will return `Err` if `s` is invalid JSON.
-pub fn deserialize<'de, Value, Key>(s: &'de mut [u8]) -> Result<Value>
+pub fn deserialize<
+    'de,
+    #[cfg(feature = "arbitrary-precision")] Value: From<&'de [u8]>,
+    #[cfg(not(feature = "arbitrary-precision"))] Value,
+    Key,
+>(
+    s: &'de mut [u8],
+) -> Result<Value>
 where
     Value: Builder<'de> + From<Vec<Value>> + From<HashMap<Key, Value, ObjectHasher>> + 'de,
     Key: Hash + Eq + From<&'de str>,
@@ -107,7 +114,12 @@ where
     _marker: PhantomData<(Value, Key)>,
 }
 
-impl<'de, Value, Key> ValueDeserializer<'de, Value, Key>
+impl<
+        'de,
+        #[cfg(feature = "arbitrary-precision")] Value: From<&'de [u8]>,
+        #[cfg(not(feature = "arbitrary-precision"))] Value,
+        Key,
+    > ValueDeserializer<'de, Value, Key>
 where
     Value: Builder<'de>
         + From<&'de str>
@@ -127,6 +139,8 @@ where
     pub fn parse(&mut self) -> Value {
         match unsafe { self.de.next_() } {
             Node::Static(s) => Value::from(s),
+            #[cfg(feature = "arbitrary-precision")]
+            Node::Number(n) => Value::from(n),
             Node::String(s) => Value::from(s),
             Node::Array(len, _) => self.parse_array(len),
             Node::Object(len, _) => self.parse_map(len),

@@ -79,6 +79,9 @@ pub fn to_value_with_buffers(
 pub enum Value {
     /// Static values
     Static(StaticNode),
+    #[cfg(feature = "arbitrary-precision")]
+    /// Arbitrary precision number
+    Number(crate::OwnedNumber),
     /// string type
     String(String),
     /// array type
@@ -146,6 +149,8 @@ impl ValueAccess for Value {
     fn value_type(&self) -> ValueType {
         match self {
             Self::Static(s) => s.value_type(),
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(_) => ValueType::Custom("Number"),
             Self::String(_) => ValueType::String,
             Self::Array(_) => ValueType::Array,
             Self::Object(_) => ValueType::Object,
@@ -166,6 +171,7 @@ impl ValueAccess for Value {
     fn as_i64(&self) -> Option<i64> {
         match self {
             Self::Static(s) => s.as_i64(),
+            Self::Number(n) => n.parse().ok()?.as_i64(),
             _ => None,
         }
     }
@@ -175,6 +181,7 @@ impl ValueAccess for Value {
     fn as_i128(&self) -> Option<i128> {
         match self {
             Self::Static(s) => s.as_i128(),
+            Self::Number(n) => n.parse().ok()?.as_i128(),
             _ => None,
         }
     }
@@ -185,6 +192,7 @@ impl ValueAccess for Value {
     fn as_u64(&self) -> Option<u64> {
         match self {
             Self::Static(s) => s.as_u64(),
+            Self::Number(n) => n.parse().ok()?.as_u64(),
             _ => None,
         }
     }
@@ -196,6 +204,7 @@ impl ValueAccess for Value {
     fn as_u128(&self) -> Option<u128> {
         match self {
             Self::Static(s) => s.as_u128(),
+            Self::Number(n) => n.parse().ok()?.as_u128(),
             _ => None,
         }
     }
@@ -205,6 +214,7 @@ impl ValueAccess for Value {
     fn as_f64(&self) -> Option<f64> {
         match self {
             Self::Static(s) => s.as_f64(),
+            Self::Number(n) => n.parse().ok()?.as_f64(),
             _ => None,
         }
     }
@@ -215,6 +225,7 @@ impl ValueAccess for Value {
     fn cast_f64(&self) -> Option<f64> {
         match self {
             Self::Static(s) => s.cast_f64(),
+            Self::Number(n) => n.parse().ok()?.as_f64(),
             _ => None,
         }
     }
@@ -277,6 +288,8 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Static(s) => s.fmt(f),
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(n) => n.fmt(f),
             Self::String(s) => write!(f, "{s}"),
             Self::Array(a) => write!(f, "{a:?}"),
             Self::Object(o) => write!(f, "{o:?}"),
@@ -338,6 +351,8 @@ impl<'de> OwnedDeserializer<'de> {
     pub fn parse(&mut self) -> Value {
         match unsafe { self.de.next_() } {
             Node::Static(s) => Value::Static(s),
+            #[cfg(feature = "arbitrary-precision")]
+            Node::Number(n) => Value::from(n),
             Node::String(s) => Value::from(s),
             Node::Array(len, _) => self.parse_array(len),
             Node::Object(len, _) => self.parse_map(len),

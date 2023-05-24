@@ -8,6 +8,9 @@ impl PartialEq<BorrowedValue<'_>> for Value {
     fn eq(&self, other: &BorrowedValue<'_>) -> bool {
         match (self, other) {
             (Self::Static(s1), BorrowedValue::Static(s2)) => s1 == s2,
+            (Self::Static(s1), BorrowedValue::Number(s2)) => s1 == s2,
+            (Self::Number(s1), BorrowedValue::Static(s2)) => s1 == s2,
+            (Self::Number(s1), BorrowedValue::Number(s2)) => s1 == s2,
             (Self::String(v1), BorrowedValue::String(v2)) => v1.eq(v2),
             (Self::Array(v1), BorrowedValue::Array(v2)) => v1.eq(v2),
             (Self::Object(v1), BorrowedValue::Object(v2)) => {
@@ -29,6 +32,9 @@ impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Static(s1), Self::Static(s2)) => s1.eq(s2),
+            (Self::Static(s1), Self::Number(s2)) => s1.eq(s2),
+            (Self::Number(s1), Self::Static(s2)) => s1.eq(s2),
+            (Self::Number(s1), Self::Number(s2)) => s1.eq(s2),
             (Self::String(v1), Self::String(v2)) => v1.eq(v2),
             (Self::Array(v1), Self::Array(v2)) => v1.eq(v2),
             (Self::Object(v1), Self::Object(v2)) => v1.eq(v2),

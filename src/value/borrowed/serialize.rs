@@ -100,6 +100,8 @@ trait Generator: BaseGenerator {
             Value::Static(StaticNode::F64(number)) => self.write_float(number),
             Value::Static(StaticNode::Bool(true)) => self.write(b"true"),
             Value::Static(StaticNode::Bool(false)) => self.write(b"false"),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(ref number) => self.write(number),
             Value::String(ref string) => self.write_string(string),
             Value::Array(ref array) => {
                 if array.is_empty() {
@@ -180,6 +182,8 @@ trait FastGenerator: BaseGenerator {
             Value::Static(StaticNode::F64(number)) => self.write_float(number),
             Value::Static(StaticNode::Bool(true)) => self.write(b"true"),
             Value::Static(StaticNode::Bool(false)) => self.write(b"false"),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(ref number) => self.write(number),
             Value::String(ref string) => self.write_string(string),
             Value::Array(ref array) => {
                 if array.is_empty() {

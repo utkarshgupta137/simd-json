@@ -247,6 +247,11 @@ mod known_key;
 #[cfg(feature = "known-key")]
 pub use known_key::{Error as KnownKeyError, KnownKey};
 
+#[cfg(feature = "arbitrary-precision")]
+mod number;
+#[cfg(feature = "arbitrary-precision")]
+pub use number::{BorrowedNumber, OwnedNumber};
+
 pub use crate::tape::{Node, Tape};
 use std::alloc::{alloc, handle_alloc_error, Layout};
 use std::ops::{Deref, DerefMut};
@@ -1856,7 +1861,7 @@ mod tests_serde {
 
         #[test]
         fn prop_json(d in arb_json()) {
-            use super::{OwnedValue, deserialize};
+            use super::{BorrowedValue, OwnedValue, deserialize};
             if let Ok(v_serde) = serde_json::from_slice::<serde_json::Value>(d.as_bytes()) {
                 let mut d1 = d.clone();
                 let d1 = unsafe{ d1.as_bytes_mut()};
@@ -1868,11 +1873,15 @@ mod tests_serde {
                 let d3 = unsafe{ d3.as_bytes_mut()};
                 let mut d4 = d.clone();
                 let d4 = unsafe{ d4.as_bytes_mut()};
+                let mut d5 = d.clone();
+                let d5 = unsafe{ d5.as_bytes_mut()};
                 assert_eq!(v_simd_serde, v_serde);
                 let v_simd_owned = to_owned_value(d2).expect("to_owned_value failed");
                 let v_simd_borrowed = to_borrowed_value(d3).expect("to_borrowed_value failed");
                 assert_eq!(v_simd_borrowed, v_simd_owned);
-                let v_deserialize: OwnedValue = deserialize(d4).expect("deserialize failed");
+                let v_deserialize: BorrowedValue = deserialize(d4).expect("deserialize(BorrowedValue) failed");
+                assert_eq!(v_deserialize, v_simd_owned);
+                let v_deserialize: OwnedValue = deserialize(d5).expect("deserialize(OwnedValue) failed");
                 assert_eq!(v_deserialize, v_simd_owned);
             }
 

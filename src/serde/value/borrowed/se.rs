@@ -28,6 +28,8 @@ impl<'value> Serialize for Value<'value> {
             Value::Static(StaticNode::I64(i)) => serializer.serialize_i64(*i),
             #[cfg(feature = "128bit")]
             Value::Static(StaticNode::I128(i)) => serializer.serialize_i128(*i),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(n) => serializer.serialize_bytes(n),
             Value::String(s) => serializer.serialize_str(s),
             Value::Array(v) => {
                 let mut seq = serializer.serialize_seq(Some(v.len()))?;

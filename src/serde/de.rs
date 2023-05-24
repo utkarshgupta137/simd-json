@@ -4,6 +4,23 @@ use serde_ext::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde_ext::forward_to_deserialize_any;
 use std::str;
 
+fn visit_static_node<'de, V>(node: StaticNode, visitor: V) -> Result<V::Value>
+where
+    V: Visitor<'de>,
+{
+    match node {
+        StaticNode::Null => visitor.visit_unit(),
+        StaticNode::Bool(b) => visitor.visit_bool(b),
+        StaticNode::F64(n) => visitor.visit_f64(n),
+        StaticNode::I64(n) => visitor.visit_i64(n),
+        #[cfg(feature = "128bit")]
+        StaticNode::I128(n) => visitor.visit_i128(n),
+        StaticNode::U64(n) => visitor.visit_u64(n),
+        #[cfg(feature = "128bit")]
+        StaticNode::U128(n) => visitor.visit_u128(n),
+    }
+}
+
 impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de>
 where
     'de: 'a,
@@ -20,15 +37,12 @@ where
     {
         match stry!(self.next()) {
             Node::String(s) => visitor.visit_borrowed_str(s),
-            Node::Static(StaticNode::Null) => visitor.visit_unit(),
-            Node::Static(StaticNode::Bool(b)) => visitor.visit_bool(b),
-            Node::Static(StaticNode::F64(n)) => visitor.visit_f64(n),
-            Node::Static(StaticNode::I64(n)) => visitor.visit_i64(n),
-            #[cfg(feature = "128bit")]
-            Node::Static(StaticNode::I128(n)) => visitor.visit_i128(n),
-            Node::Static(StaticNode::U64(n)) => visitor.visit_u64(n),
-            #[cfg(feature = "128bit")]
-            Node::Static(StaticNode::U128(n)) => visitor.visit_u128(n),
+            #[cfg(feature = "arbitrary-precision")]
+            Node::Number(n) => {
+                let num: crate::BorrowedNumber = n.into();
+                visit_static_node(num.parse()?, visitor)
+            }
+            Node::Static(node) => visit_static_node(node, visitor),
             Node::Array(len, _) => visitor.visit_seq(CommaSeparated::new(self, len)),
             Node::Object(len, _) => visitor.visit_map(CommaSeparated::new(self, len)),
         }

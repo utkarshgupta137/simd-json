@@ -36,6 +36,8 @@ impl<'de> de::Deserializer<'de> for Value {
             #[cfg(feature = "128bit")]
             Value::Static(StaticNode::U128(n)) => visitor.visit_u128(n),
             Value::Static(StaticNode::F64(n)) => visitor.visit_f64(n),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(n) => Value::Static(n.parse()?).deserialize_any(visitor),
             Value::String(s) => visitor.visit_string(s),
             Value::Array(a) => visitor.visit_seq(Array(a.into_iter())),
             Value::Object(o) => visitor.visit_map(ObjectAccess {
@@ -610,6 +612,8 @@ impl<'de> de::Deserializer<'de> for &'de Value {
             #[cfg(feature = "128bit")]
             Value::Static(StaticNode::U128(n)) => visitor.visit_u128(*n),
             Value::Static(StaticNode::F64(n)) => visitor.visit_f64(*n),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(n) => Value::Static(n.parse()?).deserialize_any(visitor),
             Value::String(s) => visitor.visit_borrowed_str(s),
             Value::Array(a) => visitor.visit_seq(ArrayRef(a.iter())),
             Value::Object(o) => visitor.visit_map(ObjectRefAccess::new(o.iter())),

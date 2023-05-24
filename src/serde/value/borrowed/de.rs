@@ -37,6 +37,8 @@ impl<'de> de::Deserializer<'de> for Value<'de> {
             #[cfg(feature = "128bit")]
             Value::Static(StaticNode::U128(n)) => visitor.visit_u128(n),
             Value::Static(StaticNode::F64(n)) => visitor.visit_f64(n),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(n) => Value::Static(n.parse()?).deserialize_any(visitor),
             #[cfg(feature = "beef")]
             Value::String(s) => {
                 if s.is_borrowed() {
@@ -623,6 +625,8 @@ impl<'de> de::Deserializer<'de> for &'de Value<'de> {
             #[cfg(feature = "128bit")]
             Value::Static(StaticNode::U128(n)) => visitor.visit_u128(*n),
             Value::Static(StaticNode::F64(n)) => visitor.visit_f64(*n),
+            #[cfg(feature = "arbitrary-precision")]
+            Value::Number(n) => Value::Static(n.parse()?).deserialize_any(visitor),
             Value::String(s) => visitor.visit_borrowed_str(s),
             Value::Array(a) => visitor.visit_seq(ArrayRef(a.iter())),
             Value::Object(o) => visitor.visit_map(ObjectRefAccess::new(o.iter())),

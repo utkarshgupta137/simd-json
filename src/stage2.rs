@@ -189,6 +189,18 @@ impl<'de> Deserializer<'de> {
             };
         }
 
+        macro_rules! insert_number {
+            ($negative: literal) => {
+                #[cfg(feature = "arbitrary-precision")]
+                // FIXME: This should be derived from input2
+                insert_res!(Node::Number(&input[idx..]));
+                #[cfg(not(feature = "arbitrary-precision"))]
+                insert_res!(Node::Static(s2try!(Self::parse_number(
+                    idx, input2, $negative
+                ))));
+            };
+        }
+
         // The continue cases are the most frequently called onces it's
         // worth pulling them out into a macro (aka inlining them)
         // Since we don't have a 'gogo' in rust.
@@ -379,7 +391,7 @@ impl<'de> Deserializer<'de> {
                 fail!(ErrorType::TrailingData);
             }
             b'-' => {
-                insert_res!(Node::Static(s2try!(Self::parse_number(idx, input2, true))));
+                insert_number!(true);
 
                 if i == structural_indexes.len() {
                     success!();
@@ -387,7 +399,7 @@ impl<'de> Deserializer<'de> {
                 fail!(ErrorType::TrailingData);
             }
             b'0'..=b'9' => {
-                insert_res!(Node::Static(s2try!(Self::parse_number(idx, input2, false))));
+                insert_number!(false);
 
                 if i == structural_indexes.len() {
                     success!();
@@ -436,16 +448,12 @@ impl<'de> Deserializer<'de> {
                             object_continue!();
                         }
                         b'-' => {
-                            insert_res!(Node::Static(s2try!(Self::parse_number(
-                                idx, input2, true
-                            ))));
+                            insert_number!(true);
 
                             object_continue!();
                         }
                         b'0'..=b'9' => {
-                            insert_res!(Node::Static(s2try!(Self::parse_number(
-                                idx, input2, false
-                            ))));
+                            insert_number!(false);
 
                             object_continue!();
                         }
@@ -542,16 +550,12 @@ impl<'de> Deserializer<'de> {
                             array_continue!();
                         }
                         b'-' => {
-                            insert_res!(Node::Static(s2try!(Self::parse_number(
-                                idx, input2, true
-                            ))));
+                            insert_number!(true);
 
                             array_continue!();
                         }
                         b'0'..=b'9' => {
-                            insert_res!(Node::Static(s2try!(Self::parse_number(
-                                idx, input2, false
-                            ))));
+                            insert_number!(false);
 
                             array_continue!();
                         }

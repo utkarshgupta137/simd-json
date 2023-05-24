@@ -9,6 +9,9 @@ impl<'value> PartialEq for Value<'value> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Static(s1), Self::Static(s2)) => s1 == s2,
+            (Self::Static(s1), Self::Number(s2)) => s1 == s2,
+            (Self::Number(s1), Self::Static(s2)) => s1 == s2,
+            (Self::Number(s1), Self::Number(s2)) => s1 == s2,
             (Self::String(v1), Self::String(v2)) => v1.eq(v2),
             (Self::Array(v1), Self::Array(v2)) => v1.eq(v2),
             (Self::Object(v1), Self::Object(v2)) => v1.eq(v2),

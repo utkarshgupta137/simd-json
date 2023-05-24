@@ -10,6 +10,8 @@ impl<'value> From<OwnedValue> for Value<'value> {
     fn from(b: OwnedValue) -> Self {
         match b {
             OwnedValue::Static(s) => Value::from(s),
+            #[cfg(feature = "arbitrary-precision")]
+            OwnedValue::Number(n) => Value::from(n),
             OwnedValue::String(s) => Value::from(s),
             OwnedValue::Array(a) => a.into_iter().collect(),
             OwnedValue::Object(m) => m.into_iter().collect(),
@@ -76,6 +78,16 @@ impl<'value> From<String> for Value<'value> {
     #[must_use]
     fn from(s: String) -> Self {
         Value::String(s.into())
+    }
+}
+
+/********* number **********/
+#[cfg(feature = "arbitrary-precision")]
+impl<'value> From<&'value [u8]> for Value<'value> {
+    #[inline]
+    #[must_use]
+    fn from(n: &'value [u8]) -> Self {
+        Value::Number(n.into())
     }
 }
 

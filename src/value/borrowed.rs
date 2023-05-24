@@ -77,6 +77,9 @@ pub fn to_value_with_buffers<'value>(
 pub enum Value<'value> {
     /// Static values
     Static(StaticNode),
+    #[cfg(feature = "arbitrary-precision")]
+    /// Arbitrary precision number
+    Number(crate::BorrowedNumber<'value>),
     /// string type
     String(Cow<'value, str>),
     /// array type
@@ -103,6 +106,10 @@ impl<'value> Value<'value> {
                 std::mem::transmute::<Value<'value>, Value<'static>>(Self::String(Cow::from(
                     s.to_string(),
                 )))
+            },
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(s) => unsafe {
+                std::mem::transmute::<Value<'value>, Value<'static>>(Self::Number(s.clone()))
             },
             // For an array we turn every value into a static
             Self::Array(arr) => arr.into_iter().map(Value::into_static).collect(),
@@ -133,6 +140,10 @@ impl<'value> Value<'value> {
                 std::mem::transmute::<Value<'value>, Value<'static>>(Self::String(Cow::from(
                     s.to_string(),
                 )))
+            },
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(s) => unsafe {
+                std::mem::transmute::<Value<'value>, Value<'static>>(Self::Number(s.clone()))
             },
             // For an array we turn every value into a static
             Self::Array(arr) => arr.iter().cloned().map(Value::into_static).collect(),
@@ -207,6 +218,8 @@ impl<'value> ValueAccess for Value<'value> {
     fn value_type(&self) -> ValueType {
         match self {
             Self::Static(s) => s.value_type(),
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(_) => ValueType::Custom("Number"),
             Self::String(_) => ValueType::String,
             Self::Array(_) => ValueType::Array,
             Self::Object(_) => ValueType::Object,
@@ -227,6 +240,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn as_i64(&self) -> Option<i64> {
         match self {
             Self::Static(s) => s.as_i64(),
+            Self::Number(n) => n.parse().ok()?.as_i64(),
             _ => None,
         }
     }
@@ -236,6 +250,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn as_i128(&self) -> Option<i128> {
         match self {
             Self::Static(s) => s.as_i128(),
+            Self::Number(n) => n.parse().ok()?.as_i128(),
             _ => None,
         }
     }
@@ -246,6 +261,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn as_u64(&self) -> Option<u64> {
         match self {
             Self::Static(s) => s.as_u64(),
+            Self::Number(n) => n.parse().ok()?.as_u64(),
             _ => None,
         }
     }
@@ -257,6 +273,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn as_u128(&self) -> Option<u128> {
         match self {
             Self::Static(s) => s.as_u128(),
+            Self::Number(n) => n.parse().ok()?.as_u128(),
             _ => None,
         }
     }
@@ -266,6 +283,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn as_f64(&self) -> Option<f64> {
         match self {
             Self::Static(s) => s.as_f64(),
+            Self::Number(n) => n.parse().ok()?.as_f64(),
             _ => None,
         }
     }
@@ -276,6 +294,7 @@ impl<'value> ValueAccess for Value<'value> {
     fn cast_f64(&self) -> Option<f64> {
         match self {
             Self::Static(s) => s.cast_f64(),
+            Self::Number(n) => n.parse().ok()?.as_f64(),
             _ => None,
         }
     }
@@ -339,6 +358,8 @@ impl<'value> fmt::Display for Value<'value> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Static(s) => write!(f, "{s}"),
+            #[cfg(feature = "arbitrary-precision")]
+            Self::Number(n) => write!(f, "{n}"),
             Self::String(s) => write!(f, "{s}"),
             Self::Array(a) => write!(f, "{a:?}"),
             Self::Object(o) => write!(f, "{o:?}"),
@@ -399,6 +420,8 @@ impl<'de> BorrowDeserializer<'de> {
     pub fn parse(&mut self) -> Value<'de> {
         match unsafe { self.0.next_() } {
             Node::Static(s) => Value::Static(s),
+            #[cfg(feature = "arbitrary-precision")]
+            Node::Number(n) => Value::from(n),
             Node::String(s) => Value::from(s),
             Node::Array(len, _) => self.parse_array(len),
             Node::Object(len, _) => self.parse_map(len),
